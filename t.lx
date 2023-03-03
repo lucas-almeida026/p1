@@ -1,0 +1,90 @@
+#[derive(Debug)]
+struct Point {
+  x: i32,
+  y: i32
+}
+
+let p = Point {
+  x: 1,
+  y: 2
+}
+
+println!("{:?}", p);
+
+---
+
+@derive Debug
+struct Point:
+  Float x
+  Float y
+
+p = Point:
+  x = 1
+  y = 2
+
+print_debug p
+
+===
+
+struct NewsArticle:
+  String author
+  String headline
+  String content
+
+struct Tweet:
+  String username
+  String content
+  Bool reply
+  Bool retweet
+
+interface Summary:
+  func summarize = any -> String
+  default summarize:
+    "Read more..."
+
+implement Summary for NewsArticle:
+  func summarize article:
+    #"{article.headline}, by {article.author}"
+
+
+implement Summary for Tweet:
+  func summarize tweet:
+    #"{tweet.username}: {tweet.content}"
+
+tweet = Tweet:
+  username = "@john"
+  content = "hello"
+  reply = false
+  retweet = false
+
+article = Article:
+  author = "John"
+  headline = "head-line"
+  content = "article contents"
+
+type notify = 'a -> String:
+  where 'a implements Summary
+func notify item:
+  Summary.summarize item
+
+
+type notify2 = 'a -> 'b -> String:
+  where 'a implements Summary and 'b implements Summary
+//where 'a, 'b implements Summary
+func notify2 a b:
+  #"{Summary.summarize a} {Summary.summarize b}"
+
+type notify2_same = 'a -> 'a -> String:
+  where 'a implements Summary
+func notify2_same a b:
+  #"{Summary.summarize a} {Summary.summarize b}"
+
+
+
+x = "asdf"
+
+notify tweet   // Ok
+notify article // Ok
+
+notify2 tweet article      // Ok
+notify2_same tweet article // TypeError: Article is not assignable to Tweet 
