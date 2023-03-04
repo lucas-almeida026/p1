@@ -1,0 +1,100 @@
+// This program prints Hello, world!
+
+use std.IO.*
+println "Hello, world!"
+
+---
+
+// This program adds two numbers
+use std.IO.*
+
+num1 = 1.5
+num2 = 6.3
+
+sum = num1 + num2
+
+println #"The sum of {num1} and {num2} is {sum}"
+
+---
+
+// Program to generate a random number between 0 and 9
+use std.{IO.*, Random.*}
+
+println | random_int 0 9
+
+---
+
+// Function for nth Fibonacci number
+use std.IO.*
+
+rec func fibonacci n -> Result Int String:
+  if n <= 0:
+    Err #"Invalid input {n}"
+  
+  if n <= 2:
+    Ok (n - 1)
+  
+  Ok ((fibonacci n - 1) + (fibonacci n - 2))  
+
+
+println | fibonacci 10 
+
+---
+
+// Program to find the maximum number in array
+
+use std.{IO.*, Iter.*, Math.*}
+
+arr = [10, 90, 17, 42, 13]
+
+result = reduce max arr
+
+println result // 90
+
+---
+
+// get tail of a list
+use std.IO.*
+
+rec func last list:
+  match list:
+    {} => None
+    { x } => Some x
+    { _, ...xs } => last xs
+
+list = { 2, 3, 4 }
+
+println | List.to_string | last list // Some 4
+
+---
+
+// reverse a list
+
+func rev list:
+  rec func aux acc rest:
+    match acc:
+      {} => acc
+      { h, ...t } => aux [h, ...acc] t
+  aux [] list
+
+list = {1, 2, 3, 4}
+
+println | List.to_string | rev list // {4, 3, 2, 1}
+
+---
+
+// creating structs
+std.IO.*
+
+struct Cube:
+  Float x
+  Float y
+  Float z
+
+
+cube = Cube:
+  x = 1.3
+  y = 0.0
+  z = 4.2
+
+println cube.x // 1.3
