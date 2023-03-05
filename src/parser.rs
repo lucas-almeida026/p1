@@ -1,3 +1,5 @@
+use std::vec;
+
 use crate::scanner::*;
 use regex::Regex;
 
@@ -13,6 +15,13 @@ pub struct Parser {
   map: EnumMap<TokenType, (Regex, String)>,
   cursor: u64,
 }
+
+type Combinator<T> = Box<dyn Fn(&mut Parser) -> Result<T, String>>;
+
+/*
+type Parser = (tokens: Token[], pointer: number) => Result<Token[], string>
+type Combinator = (parser: Parser) => Parser
+*/
 
 #[derive(Enum, Debug, Clone, PartialEq)]
 enum TokenType {
@@ -185,38 +194,32 @@ impl Parser {
         Err(format!("Expecting: {}, found: {:?}", opts_str, current.token_type))
     }
 
-    fn sequence(&mut self, opts: Vec<TokenType>) -> Result<Vec<TToken>, String> {
+    fn sequence<'a>(&mut self, parsers: Vec<Combinator<TToken>>) -> Combinator<Vec<TToken>> {
+        if parsers.len() < 2 {
+            return Box::new(move |_| Err("ParserError [sequence]: Not enough parsers".to_string()));
+        }
+
         let mut tokens: Vec<TToken> = Vec::new();
-        if opts.len() < 2 { return Err("ParserError [sequence]: Not enough options".to_string()); }
         let mut i = 0;
         let mut j = 1;
-        while j < opts.len() {
-            let t_a = opts[i].clone();
-            let t_b = opts[j].clone();
-            let r = self.and(t_a, t_b);
-            match r {
-                Ok((token_a, token_b)) => {
+        while j < parsers.len() {
+            let parser_a = parsers[i];
+            let parser_b = parsers[j];
+            parser_a(self).and_then(|token_a| {
+                parser_b(self).and_then(|token_b| {
                     tokens.push(token_a);
                     tokens.push(token_b);
-                    i += 1; j += 1;
-                },
-                Err(_) => {
-                    let opts_str = opts.iter()
-                        .map(|x| self.find_token_label(x))
-                        .collect::<Vec<String>>()
-                        .join(" followed by ");
-                    let d = Token {
-                        token_type: TokenType::EOF,
-                        value: "EOF".to_string(),
-                        line: 0,
-                        col: 0,
-                    };
-                    let current = self.current().unwrap_or(&d);
-                    return Err(format!("Expecting: {}, found: {:?}", opts_str, current.token_type))
-                }
-            }
-        }
-        Ok(tokens)
+                    Ok(())
+                })
+            });
+            i += 1;
+            j += 1;
+        };
+        Box::new(move |_| Ok(tokens))
+    }
+
+    fn fail(message: String) -> impl Fn(&mut Parser) -> Result<TToken, String> {
+        move |_| Err(format!("ParserError [fail]: {}", message))
     }
 
     fn find_token_label(&self, t_type: &TokenType) -> String {
